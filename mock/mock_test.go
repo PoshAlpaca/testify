@@ -20,6 +20,7 @@ import (
 // ExampleInterface represents an example interface.
 type ExampleInterface interface {
 	TheExampleMethod(a, b, c int) (int, error)
+	TheExampleMethodFunctionalOptions(x string, opts ...OptionFn) error
 }
 
 // TestExampleImplementation is a test implementation of ExampleInterface
@@ -136,7 +137,7 @@ func (m *MockTestingT) Errorf(string, ...interface{}) {
 // the execution stops.
 // When expecting this method, the call that invokes it should use the following code:
 //
-//     assert.PanicsWithValue(t, mockTestingTFailNowCalled, func() {...})
+//	assert.PanicsWithValue(t, mockTestingTFailNowCalled, func() {...})
 func (m *MockTestingT) FailNow() {
 	m.failNowCount++
 
@@ -1455,6 +1456,26 @@ func Test_Mock_AssertExpectationsFunctionalOptionsType(t *testing.T) {
 
 }
 
+func Test_Mock_AssertExpectationsFunctionalOptionsType_indirect(t *testing.T) {
+	indirectFunctionalOptions := func(ei ExampleInterface) {
+		ei.TheExampleMethodFunctionalOptions("testing", OpStr("test"), OpNum(1))
+	}
+
+	var mockedService = new(TestExampleImplementation)
+
+	mockedService.On("TheExampleMethodFunctionalOptions", "testing", FunctionalOptions(OpStr("test"), OpNum(1))).Return(nil).Once()
+
+	tt := new(testing.T)
+	assert.False(t, mockedService.AssertExpectations(tt))
+
+	// make the call now
+	indirectFunctionalOptions(mockedService)
+
+	// now assert expectations
+	assert.True(t, mockedService.AssertExpectations(tt))
+
+}
+
 func Test_Mock_AssertExpectationsFunctionalOptionsType_Empty(t *testing.T) {
 
 	var mockedService = new(TestExampleImplementation)
@@ -1656,7 +1677,7 @@ func Test_Mock_AssertOptional(t *testing.T) {
 }
 
 /*
-	Arguments helper methods
+Arguments helper methods
 */
 func Test_Arguments_Get(t *testing.T) {
 
