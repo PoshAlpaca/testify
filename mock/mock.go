@@ -971,6 +971,12 @@ func (args Arguments) Diff(objects []interface{}) (string, int) {
 			if tValue.Len() > 0 {
 				name = "[]" + reflect.TypeOf(tValue.Index(0).Interface()).String()
 			}
+			tActual := reflect.ValueOf(actual)
+			if tValue.Len() != tActual.Len() {
+				differences++
+				output = fmt.Sprintf("%s\t%d: FAIL:  length %d != length %d - functional options length\n", output, i, tValue.Len(), tActual.Len())
+				return output, differences
+			}
 
 			tName := reflect.TypeOf(t).Name()
 			if name != reflect.TypeOf(actual).String() && tValue.Len() != 0 {
@@ -1166,14 +1172,6 @@ type tHelper interface {
 func assertOpts(expected, actual interface{}) (expectedFmt, actualFmt string) {
 	expectedOpts := reflect.ValueOf(expected)
 	actualOpts := reflect.ValueOf(actual)
-	var expectedNames []string
-	for i := 0; i < expectedOpts.Len(); i++ {
-		expectedNames = append(expectedNames, funcName(expectedOpts.Index(i).Interface()))
-	}
-	var actualNames []string
-	for i := 0; i < actualOpts.Len(); i++ {
-		actualNames = append(actualNames, funcName(actualOpts.Index(i).Interface()))
-	}
 
 	for i := 0; i < expectedOpts.Len(); i++ {
 		expectedOpt := expectedOpts.Index(i).Interface()
@@ -1197,8 +1195,8 @@ func assertOpts(expected, actual interface{}) (expectedFmt, actualFmt string) {
 
 		for i := 0; i < ot.NumIn(); i++ {
 			if !assert.ObjectsAreEqual(expectedValues[i].Interface(), actualValues[i].Interface()) {
-				expectedFmt = fmt.Sprintf("%s %+v", expectedNames[i], expectedValues[i].Interface())
-				actualFmt = fmt.Sprintf("%s %+v", actualNames[i], actualValues[i].Interface())
+				expectedFmt = fmt.Sprintf("%+v", expectedValues[i].Interface())
+				actualFmt = fmt.Sprintf("%+v", actualValues[i].Interface())
 				return
 			}
 		}
